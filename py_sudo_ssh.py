@@ -31,6 +31,7 @@ def sudo(s,password,command):
 def scp(Password,Source,Destination):
     line = 'sshpass -p "'+ Password + '" scp -r '+ Source +" "+ Destination
     os.system(line)
+    
 
 def scp2Remote(Password,Source,DestinationFolder,UserName,Host):
     Destination=UserName+"@"+Host +":"+DestinationFolder
@@ -43,6 +44,7 @@ def set_content(s,Line,FileName,Append = False):
 
     Line ='echo "'+  Line + '" ' + FillOp +  FileName
     s.sendline(Line)
+    s.prompt(timeout=1)
 
 
 def append_conf_file(s,password,fileName,Line):
@@ -90,7 +92,7 @@ def add_host(s,password,host):
     line = host.IP_address + " " +host.HostName + " " + host.alias + " " +host.comment
     append_conf_file(s,password,fileName = '/etc/hosts',Line=line)
 
-#pw = "12345678"
+#pw = "***"
 #s=get_ssh_connection("168.105.254.210","belle2",pw)
 
 
