@@ -1,22 +1,29 @@
 import py_sudo_ssh
 import os
-starting_var =0xC0A80100
 
- 
-s=py_sudo_ssh.get_ssh_connection(Host,UserName,Password)
-py_sudo_ssh.sudo(s,password,"sudo -i")
 
-def add_copper(elevated_remoteShell,ip_computer_address,HardwareAdress):
-    Alias=starting_var+ip_computer_address
+
+
+
+class COPPER_conf:
+    def __init__(self,ID_number,HardwareAdress):
+        self.ID_number=ID_number
+        self.HardwareAdress=HardwareAdress
+
+def add_copper(elevated_remoteShell,copper_conf):
+    ip_computer_address=copper_conf.ID_number
+
+    
     IP="192.168.1."+  str(ip_computer_address)
+    px_cfg_fileName= ip2hex(IP)
     HostName="cpr" + str(ip_computer_address)
     
-    h=py_sudo_ssh.Host(IP_address =IP ,HostName = HostName, alias = Alias)
-    py_sudo_ssh.add_host(elevated_remoteShell,h)
+    h=py_sudo_ssh.Host(IP_address =IP ,HostName = HostName, alias = px_cfg_fileName)
+    py_sudo_ssh.add_host(elevated_remoteShell,host=h)
     
-    create_new_pxlinux_cfg_file(elevated_remoteShell,Snapshot=HostName,FileName=Alias)
+    create_new_pxlinux_cfg_file(elevated_remoteShell,Snapshot=HostName,FileName=px_cfg_fileName)
 
-    Client = py_sudo_ssh.DHCP_client(HostName=HostName,hardware_ethernet=HardwareAdress,fixed_address=HostName,option_host_name=HostName)
+    Client = py_sudo_ssh.DHCP_client(HostName=HostName,hardware_ethernet=copper_conf.HardwareAdress,fixed_address=HostName,option_host_name=HostName)
     py_sudo_ssh.add_DHCP_client(elevated_remoteShell,DHCP_cl=Client,restart=True)
          
 
@@ -33,5 +40,10 @@ def create_new_pxlinux_cfg_file(elevated_remoteShell,Snapshot,FileName,Path="/tf
     py_sudo_ssh.set_content(elevated_remoteShell,line,FileName=FullName,Append=True)
     py_sudo_ssh.set_content(elevated_remoteShell," ",FileName=FullName,Append=True)    
 
-
+def ip2hex(ip):
+    a = ip.split('.')
+    b = hex(int(a[0]))[2:].zfill(2) + hex(int(a[1]))[2:].zfill(2) + hex(int(a[2]))[2:].zfill(2) + hex(int(a[3]))[2:].zfill(2)
+    b = b.replace('0x', '')
+    b = b.upper()
+    return b
 
