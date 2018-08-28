@@ -4,22 +4,22 @@ import getpass
 import os
 
 def get_ssh_connection(hostname,username,password):
-    s = pxssh.pxssh()    
-    s.login(hostname, username, password)
-    return s
+    remoteShell = pxssh.pxssh()    
+    remoteShell.login(hostname, username, password)
+    return remoteShell
     
 
-def sudo(s,password,command):
+def sudo(remoteShell,password,command):
     rootprompt = re.compile('.*[$#]')
-    s.sendline(command)
-    i = s.expect([rootprompt,'assword.*: '])
+    remoteShell.sendline(command)
+    i = remoteShell.expect([rootprompt,'assword.*: '])
     if i==0:
         print("didnt need password!")
         pass
     elif i==1:
         print("sending password")
-        s.sendline(password)
-        j = s.expect([rootprompt,'Sorry, try again'])
+        remoteShell.sendline(password)
+        j = remoteShell.expect([rootprompt,'Sorry, try again'])
         if j == 0:
             pass
         elif j == 1:
@@ -37,14 +37,14 @@ def scp2Remote(Password,Source,DestinationFolder,UserName,Host):
     Destination=UserName+"@"+Host +":"+DestinationFolder
     scp(Password,Source,Destination)
 
-def set_content(s,Line,FileName,Append = False):
+def set_content(remoteShell,Line,FileName,Append = False):
     FillOp = " > "
     if Append:
         FillOp = " >> "
 
     Line ='echo "'+  Line + '" ' + FillOp +  FileName
-    s.sendline(Line)
-    s.prompt(timeout=1)
+    remoteShell.sendline(Line)
+    remoteShell.prompt(timeout=1)
 
 
 def append_conf_file(s,password,fileName,Line):
@@ -66,15 +66,16 @@ class DHCP_client:
         
        
 
-def add_DHCP_client(s,password,DHCP_cl,restart = True):
+def add_DHCP_client(elevated_remoteShell,DHCP_cl,restart = True):
     line = 	'host ' + DHCP_cl.HostName + " { hardware ethernet " + DHCP_cl.hardware_ethernet + " ; fixed-address " + DHCP_cl.fixed_address+"; "
     if len(DHCP_cl.option_host_name)>0:
         line = line + "option host-name " +DHCP_cl.option_host_name+" ;" 
     
     line = line +  " } " +DHCP_cl.comment
-    append_conf_file(s,password,fileName = '/etc/dhcp/dhcpd.conf',Line=line)
+    set_content(elevated_remoteShell,FileName = '/etc/dhcp/dhcpd.conf',Line=line,Append=True)
     if restart:
-        sudo(s,password,"systemctl restart dhcpd.service")
+        elevated_remoteShell.sendline("systemctl restart dhcpd.service")
+        
 
     
 
@@ -88,15 +89,16 @@ class Host:
         if len(comment)>0:
             self.comment = '#' + comment
 
-def add_host(s,password,host):
+def add_host(elevated_remoteShell,host):
     line = host.IP_address + " " +host.HostName + " " + host.alias + " " +host.comment
-    append_conf_file(s,password,fileName = '/etc/hosts',Line=line)
+    set_content(elevated_remoteShell,Line=line,FileName='/etc/hosts',Append=True)
+    
 
 #pw = "***"
 #s=get_ssh_connection("168.105.254.210","belle2",pw)
 
 
-#d = DHCP_client("IsarLaptop","3c:97:0e:91:6c:0a","192.168.1.109",comment= "comment1")
+#d = DHCP_client("LabComputer","3c:97:0e:91:6c:0a","192.168.1.109",comment= "comment1")
 #add_DHCP_client(s,pw,d)
 
 #s.prompt()
